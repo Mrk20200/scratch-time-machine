@@ -2,9 +2,12 @@ import requests
 import time
 import re
 
+# Update before commiting changes
+script_version = "1.0.0"
+
 # Initialize Request session with common headers
 requestSession = requests.Session()
-requestSession.headers.update({'Origin': 'https://web.archive.org', 'Accept':'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36'})
+requestSession.headers.update({'Origin': 'https://web.archive.org', 'Accept':'application/json', 'User-Agent': f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 ScratchTimeMachine/{script_version}'})
 
 def fetchArchiveData(url:str):
     """Simple wrapper for requests that need a dictionary object from the JSON-formatted result."""
@@ -112,9 +115,9 @@ def mainLoop():
 
 if __name__ == '__main__':
     try:
-        print('Scratch Time Machine')
+        print(f'Scratch Time Machine (v{script_version})')
         print('Made by Mrk20200')
-        print('Powered by the Internet Archive\'s Wayback Machine!')
+        print('Powered by the Internet Archive\'s Wayback Machine')
         print()
         while True:
             mainLoop()
