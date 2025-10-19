@@ -3,11 +3,11 @@ import time
 import re
 
 # Update before commiting changes
-script_version = "1.0.0"
+script_version = "1.0.1"
 
 # Initialize Request session with common headers
 requestSession = requests.Session()
-requestSession.headers.update({'Origin': 'https://web.archive.org', 'Accept':'application/json', 'User-Agent': f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 ScratchTimeMachine/{script_version}'})
+requestSession.headers.update({'Origin': 'https://web.archive.org', 'Accept':'application/json', 'User-Agent': f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 ScratchTimeMachine/{script_version}'})
 
 def fetchArchiveData(url:str):
     """Simple wrapper for requests that need a dictionary object from the JSON-formatted result."""
@@ -15,7 +15,7 @@ def fetchArchiveData(url:str):
     return r.json()
 
 def formatData(data:list):
-    """Formats header-based arrays into a more parsable format"""
+    """Formats the "All URLs" API responses into a parsable list & dictionary combination"""
     if len(data) == 0:
         return []
     
@@ -38,7 +38,7 @@ def getLegacyArchives(URLentry:list):
     startYear = int(time.strftime('%Y', time.strptime(URLentry['timestamp'], '%Y%m%d%H%M%S')))
     endYear = int(time.strftime('%Y',time.strptime(URLentry['endtimestamp'], '%Y%m%d%H%M%S')))
     for year in range(startYear, endYear+1):
-        print(f'Getting list of archives from {year}...')
+        print(f'Getting metadata of archives from {year}...')
         yearData = fetchArchiveData(f'http://web.archive.org/__wb/calendarcaptures/2?url={URLentry['original']}&date={year}')
         for archive in yearData['items']:
             if (archive[1] == '-') or (400 <= int(archive[1]) < 600):
@@ -55,12 +55,12 @@ def getLegacyArchives(URLentry:list):
 
 
 def getArchivesForProject(projectID:str):
-    print('Getting metadata about archives made before mid-2022...')
+    print('Checking if there were archives made before mid-2022...')
     dataDirect = fetchArchiveData(f'http://web.archive.org/web/timemap/json?url=https://projects.scratch.mit.edu/{projectID}&collapse=urlkey&matchType=exact&output=json&fl=original,timestamp,endtimestamp&filter=!statuscode:[45]..&limit=1')
     directEntry = formatData(dataDirect)
     directListing = getLegacyArchives(directEntry)
 
-    print('Getting list of archives made after mid-2022...')
+    print('Getting metadata of archives made after mid-2022...')
     dataTokens = fetchArchiveData(f'http://web.archive.org/web/timemap/json?url=https://projects.scratch.mit.edu/{projectID}?token&collapse=urlkey&matchType=prefix&output=json&fl=original,timestamp&filter=!statuscode:[45]..&limit=10000')
     tokenListing = formatData(dataTokens)
 
@@ -92,14 +92,15 @@ def mainLoop():
 
     print(f'Archived versions of project ID {currentProject}:')
     for idx, project in enumerate(listing):
-        print(f'{str(idx+1).zfill(padding)}', end='')
-        print(f' - {time.strftime('%m/%d/%Y %I:%M %p', time.strptime(project['timestamp'], '%Y%m%d%H%M%S'))}', end='')
+        print(f'{str(idx+1).zfill(padding)}', end=': ')
+        print(time.strftime('%m/%d/%Y %I:%M %p', time.strptime(project['timestamp'], '%Y%m%d%H%M%S')), end='')
         if 'collections' in project:
-            print(f' (why: { ', '.join(project['collections'])})', end='')
-        print()
+            print(f' (why: { ', '.join(project['collections'])})')
+        else:
+            print()
     print()
 
-    chosenArchive = listing[int(input('Which version to download? '))-1]
+    chosenArchive = listing[int(input('Choose the version to download: '))-1]
     autoFileName = f'{currentProject}_{chosenArchive['timestamp']}.sb3'
     fileName = input(f'Enter filename (default: {autoFileName}): ')
     if len(fileName) == 0:
@@ -108,15 +109,15 @@ def mainLoop():
     with open(fileName, 'w+b') as f:
         r = requestSession.get(f'http://web.archive.org/web/{chosenArchive['timestamp']}if_/{chosenArchive['original']}')
         f.write(r.content)
-    print('Done! This file only has the "project.json", meaning that none of the assets are in the project file.')
-    print('Open it in one of the below programs with an internet connection, then re-save it to make an offline copy:')
+    print("Done! This project doesn't have any assets inside, meaning it can only be viewed when you're online.")
+    print('To make an offline version, open it in one of the below apps with an internet connection, then re-save the file:')
     print('  - Scratch website editor (not desktop)')
     print('  - TurboWarp editor (website or desktop)')
 
 if __name__ == '__main__':
     try:
         print(f'Scratch Time Machine (v{script_version})')
-        print('Made by Mrk20200')
+        print('Created by Mrk20200')
         print('Powered by the Internet Archive\'s Wayback Machine')
         print()
         while True:
